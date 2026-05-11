@@ -1,0 +1,12 @@
+<group name="syslog,sshd,brute_force,">
+  <!-- SSH Brute Force Detection Rule -->
+  <rule id="100001" level="10" frequency="5" timeframe="120">
+    <if_matched_sid>5716</if_matched_sid>
+    <same_source_ip />
+    <description>SSH Brute force attack detected: Multiple failed logins from same IP.</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failures,pci_dss_10.2.4,pci_dss_11.4,</group>
+  </rule>
+</group>

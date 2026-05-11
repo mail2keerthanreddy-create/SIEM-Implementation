@@ -1,0 +1,12 @@
+<group name="anomaly_detection,">
+  <!-- Anomaly Detection: Unusual Process Execution -->
+  <rule id="100002" level="8">
+    <if_group>syscheck</if_group>
+    <match>unusual_binary_execution</match>
+    <description>Anomaly detected: Execution of an unusual binary in a critical system folder.</description>
+    <mitre>
+      <id>T1036</id>
+    </mitre>
+    <group>anomaly,malware_behavior,</group>
+  </rule>
+</group>

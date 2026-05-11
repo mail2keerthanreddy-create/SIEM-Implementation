@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SIEM Security Dashboard - Comprehensive</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh;}
+:root{--accent:#00d4ff;--danger:#ff4757;--warn:#ffa502;--success:#2ed573;--card:#111827;--border:#1e2d47;}
+
+nav{background:#070b14;border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.logo{display:flex;align-items:center;gap:.6rem;font-weight:700;font-size:1.1rem;color:#fff;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#00d4ff,#0090ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.nav-right{display:flex;align-items:center;gap:1.5rem;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+.container{padding:1.5rem 2rem;}
+
+/* Tabs */
+.tabs{display:flex;gap:1rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;}
+.nav-tab{background:var(--card);border:1px solid var(--border);padding:.6rem 1.2rem;border-radius:8px;cursor:pointer;font-weight:600;color:#94a3b8;transition:all .2s;}
+.nav-tab:hover{background:rgba(255,255,255,0.05);}
+.nav-tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* Grid layouts */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;border-top:3px solid var(--border);}
+.stat-card.danger{border-top-color:var(--danger);}
+.stat-card.warn{border-top-color:var(--warn);}
+.stat-card.info{border-top-color:var(--accent);}
+.stat-card.ok{border-top-color:var(--success);}
+.stat-label{font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;}
+.stat-value{font-size:2rem;font-weight:700;}
+
+.main-grid{display:grid;grid-template-columns:2fr 1fr;gap:1.2rem;margin-bottom:1.2rem;}
+.split-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.4rem;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;}
+.card-title{font-size:.9rem;font-weight:600;}
+
+/* Alert Feed */
+.alert-feed{max-height:280px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1e2d47 transparent;}
+.alert-item{display:flex;align-items:flex-start;gap:.8rem;padding:.7rem .8rem;border-radius:8px;margin-bottom:.5rem;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:none;}}
+.alert-item.critical{background:rgba(255,71,87,.07);border-left:3px solid var(--danger);}
+.alert-item.warning{background:rgba(255,165,2,.07);border-left:3px solid var(--warn);}
+.alert-item.info{background:rgba(0,212,255,.06);border-left:3px solid var(--accent);}
+.alert-msg{font-size:.78rem;line-height:1.4;}
+.alert-time{font-size:.68rem;color:#64748b;margin-top:.2rem;}
+
+/* Log Feeds */
+.log-row{display:flex;gap:1rem;padding:.5rem;border-bottom:1px solid rgba(30,45,71,.5);font-size:.75rem;font-family:monospace;animation:slideIn .3s ease;}
+.log-ts{color:#64748b;}
+.log-msg{flex:1;color:#e2e8f0;}
+.badge-lvl{padding:.1rem .4rem;border-radius:4px;font-weight:bold;font-size:.7rem;}
+.badge-lvl.CRIT{background:rgba(255,71,87,.2);color:var(--danger);}
+.badge-lvl.WARN{background:rgba(255,165,2,.2);color:var(--warn);}
+.badge-lvl.INFO{background:rgba(0,212,255,.2);color:var(--accent);}
+.evtid{color:var(--accent);width:50px;}
+
+/* Rules */
+.rule-card{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:1rem;border-radius:8px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;}
+.rule-title{font-weight:600;font-size:.9rem;margin-bottom:.2rem;}
+.rule-desc{font-size:.75rem;color:#94a3b8;}
+.rule-toggle{background:rgba(46,213,115,.2);color:var(--success);border:none;padding:.4rem .8rem;border-radius:4px;cursor:pointer;font-weight:bold;font-size:.7rem;}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">🛡</div>
+    Wazuh/Security Onion SIEM
+  </div>
+  <div class="nav-right">
+    <div class="status-dot"></div>
+    <span style="font-size:.8rem;color:var(--success);font-weight:500;">SYSTEM ACTIVE</span>
+    <span style="font-size:.8rem;color:#64748b;" id="clock"></span>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="tabs">
+    <div class="nav-tab active" data-tab="dashboard">Kibana Dashboard</div>
+    <div class="nav-tab" data-tab="logs">Log Collection</div>
+    <div class="nav-tab" data-tab="rules">Detection Rules</div>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div id="dashboard" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card danger">
+        <div class="stat-label">Critical Alerts</div>
+        <div class="stat-value" id="s1">0</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-label">Failed Logins</div>
+        <div class="stat-value" id="s2">0</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-label">Events Processed</div>
+        <div class="stat-value" id="s3">0</div>
+      </div>
+      <div class="stat-card ok">
+        <div class="stat-label">Active Agents</div>
+        <div class="stat-value" id="s4">0</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Events by Source</span></div>
+        <canvas id="evtChart" style="max-height:220px;"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Alert Severity</span></div>
+        <canvas id="pieChart" style="max-height:220px;"></canvas>
+      </div>
+    </div>
+
+    <div class="main-grid" style="grid-template-columns: 1fr 2fr;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Failed Logins (Brute Force)</span></div>
+        <canvas id="loginChart" style="max-height:220px;"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Live Security Alerts</span></div>
+        <div class="alert-feed" id="alertFeed"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGS TAB -->
+  <div id="logs" class="tab-content">
+    <div class="split-grid">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🪟 Windows Event Logs</span></div>
+        <div class="alert-feed" id="winFeed"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🐧 Linux Syslogs</span></div>
+        <div class="alert-feed" id="linFeed"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:1.2rem;">
+      <div class="card-header"><span class="card-title">🧱 Firewall Logs (Network)</span></div>
+      <div class="alert-feed" id="fwFeed"></div>
+    </div>
+  </div>
+
+  <!-- RULES TAB -->
+  <div id="rules" class="tab-content">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Custom Detection Rules</span></div>
+      
+      <div class="rule-card">
+        <div>
+          <div class="rule-title">SSH Brute Force Detection</div>
+          <div class="rule-desc">Rule ID: 100001 | Mitre: T1110 | Triggers when >5 failed logins occur within 120s from the same IP.</div>
+        </div>
+        <button class="rule-toggle on">ENABLED</button>
+      </div>
+
+      <div class="rule-card">
+        <div>
+          <div class="rule-title">Unusual Binary Execution (Anomaly)</div>
+          <div class="rule-desc">Rule ID: 100002 | Mitre: T1036 | Detects syscheck events where unexpected binaries run in system folders.</div>
+        </div>
+        <button class="rule-toggle on">ENABLED</button>
+      </div>
+
+      <div class="rule-card">
+        <div>
+          <div class="rule-title">RDP Brute Force Detection (Windows)</div>
+          <div class="rule-desc">Rule ID: 100003 | Mitre: T1110 | Triggers on multiple EventID 4625 within a short timeframe.</div>
+        </div>
+        <button class="rule-toggle on">ENABLED</button>
+      </div>
+      
+      <div class="rule-card">
+        <div>
+          <div class="rule-title">Firewall Port Scan Detection</div>
+          <div class="rule-desc">Rule ID: 100004 | Mitre: T1046 | Detects rapid connections to multiple ports from a single source IP.</div>
+        </div>
+        <button class="rule-toggle on">ENABLED</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
